@@ -2069,7 +2069,7 @@ EditorFileSystem::ScriptClassInfo EditorFileSystem::_get_global_script_class(con
 	ScriptClassInfo info;
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		if (ScriptServer::get_language(i)->handles_global_class_type(p_type)) {
-			info.name = ScriptServer::get_language(i)->get_global_class_name(p_path, &info.extends, &info.icon_path, &info.is_abstract, &info.is_tool);
+			info.name = ScriptServer::get_language(i)->get_global_class_name(p_path, &info.extends, &info.icon_path, &info.is_abstract, &info.is_tool, &info.namespace_name);
 			break;
 		}
 	}
@@ -2527,7 +2527,8 @@ void EditorFileSystem::_register_global_class_script(const String &p_search_path
 		return; // No lang found that can handle this global class
 	}
 
-	ScriptServer::add_global_class(p_script_update.name, p_script_update.extends, lang, p_target_path, p_script_update.is_abstract, p_script_update.is_tool);
+	print_line(vformat("Adding global class '%s' with namespace '%s' for type '%s' from path '%s'", p_script_update.name, p_script_update.namespace_name, p_script_update.type, p_search_path));
+	ScriptServer::add_global_class(p_script_update.name, p_script_update.extends, lang, p_target_path, p_script_update.is_abstract, p_script_update.is_tool, p_script_update.namespace_name);
 	EditorNode::get_editor_data().script_class_set_icon_path(p_script_update.name, p_script_update.icon_path);
 	EditorNode::get_editor_data().script_class_set_name(p_target_path, p_script_update.name);
 }

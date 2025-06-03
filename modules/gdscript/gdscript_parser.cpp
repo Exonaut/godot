@@ -724,6 +724,20 @@ void GDScriptParser::parse_program() {
 					has_early_abstract = false;
 				}
 				break;
+			case GDScriptTokenizer::Token::NAMESPACE:
+				PUSH_PENDING_ANNOTATIONS_TO_HEAD;
+				advance();
+				if (head->namespace_used) {
+					push_error(R"("namespace" can only be used once.)");
+				} else {
+					parse_namespace();
+					end_statement("namespace");
+				}
+				if (has_early_abstract) {
+					head->is_abstract = true;
+					has_early_abstract = false;
+				}
+				break;
 			case GDScriptTokenizer::Token::TK_EOF:
 				PUSH_PENDING_ANNOTATIONS_TO_HEAD;
 				can_have_class_or_extends = false;
@@ -960,6 +974,22 @@ void GDScriptParser::parse_extends() {
 			return;
 		}
 		current_class->extends.push_back(parse_identifier());
+	}
+}
+
+void GDScriptParser::parse_namespace() {
+	current_class->namespace_used = true;
+	
+	if (match(GDScriptTokenizer::Token::LITERAL)) {
+		if (previous.literal.get_type() != Variant::STRING) {
+			push_error(vformat(R"(Only strings can be used after "namespace", found "%s" instead.)", Variant::get_type_name(previous.literal.get_type())));
+		}
+		current_class->namespace_name = StringName(previous.literal);
+	} else if (match(GDScriptTokenizer::Token::IDENTIFIER)) {
+		current_class->namespace_name = StringName(previous.literal);
+	} else {
+		push_error(R"(Expected string or identifier after "namespace".)");
+		return;
 	}
 }
 

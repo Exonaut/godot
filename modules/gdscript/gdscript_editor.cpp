@@ -1060,7 +1060,8 @@ static void _list_available_types(bool p_inherit_only, GDScriptParser::Completio
 
 	// Global scripts
 	List<StringName> global_classes;
-	ScriptServer::get_global_class_list(&global_classes);
+	StringName current_namespace = p_context.current_class->namespace_name;
+	ScriptServer::get_global_class_list(&global_classes, current_namespace);
 	for (const StringName &E : global_classes) {
 		ScriptLanguage::CodeCompletionOption option(E, ScriptLanguage::CODE_COMPLETION_KIND_CLASS, ScriptLanguage::LOCATION_OTHER_USER_CODE);
 		r_result.insert(option.display, option);
@@ -1495,7 +1496,7 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 	}
 
 	static const char *_keywords_with_space[] = {
-		"and", "not", "or", "in", "as", "class", "class_name", "extends", "is", "func", "signal", "await",
+		"and", "not", "or", "in", "as", "class", "class_name", "extends", "namespace", "is", "func", "signal", "await",
 		"const", "enum", "abstract", "static", "var", "if", "elif", "else", "for", "match", "when", "while",
 		nullptr
 	};
@@ -1557,7 +1558,8 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 
 	// Global classes
 	List<StringName> global_classes;
-	ScriptServer::get_global_class_list(&global_classes);
+	StringName current_namespace = p_context.current_class->namespace_name;
+	ScriptServer::get_global_class_list(&global_classes, current_namespace);
 	for (const StringName &E : global_classes) {
 		ScriptLanguage::CodeCompletionOption option(E, ScriptLanguage::CODE_COMPLETION_KIND_CLASS, ScriptLanguage::LOCATION_OTHER_USER_CODE);
 		r_result.insert(option.display, option);

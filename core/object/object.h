@@ -524,7 +524,7 @@ public:                                                                         
 			return;                                                                                                                         \
 		}                                                                                                                                   \
 		m_inherits::initialize_class();                                                                                                     \
-		_add_class_to_classdb(get_class_static(), super_type::get_class_static());                                                          \
+		_add_class_to_classdb(get_class_static(), super_type::get_class_static(), StringName());                                                          \
 		if (m_class::_get_bind_methods() != m_inherits::_get_bind_methods()) {                                                              \
 			_bind_methods();                                                                                                                \
 		}                                                                                                                                   \
@@ -758,7 +758,7 @@ protected:
 	friend class ClassDB;
 	friend class PlaceholderExtensionInstance;
 
-	static void _add_class_to_classdb(const StringName &p_class, const StringName &p_inherits);
+	static void _add_class_to_classdb(const StringName &p_class, const StringName &p_inherits, const StringName &p_namespace);
 	static void _get_property_list_from_classdb(const StringName &p_class, List<PropertyInfo> *p_list, bool p_no_inheritance, const Object *p_validator);
 
 	bool _disconnect(const StringName &p_signal, const Callable &p_callable, bool p_force = false);
@@ -824,6 +824,16 @@ public:
 			assign_class_name_static("Object", _class_name_static);
 		}
 		return _class_name_static;
+	}
+
+	static void assign_namespace_name_static(const Span<char> &p_name, StringName &r_target);
+
+	static const StringName &get_namespace_static() {
+		static StringName _namespace_static;
+		if (unlikely(!_namespace_static)) {
+			assign_namespace_name_static("Object", _namespace_static);
+		}
+		return _namespace_static;
 	}
 
 	_FORCE_INLINE_ String get_class() const { return get_class_name(); }

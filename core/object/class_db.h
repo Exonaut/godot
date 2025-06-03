@@ -132,6 +132,7 @@ public:
 
 		StringName inherits;
 		StringName name;
+		StringName namespace_name;
 		bool disabled = false;
 		bool exposed = false;
 		bool reloadable = false;
@@ -195,7 +196,7 @@ public:
 	static APIType current_api;
 	static HashMap<APIType, uint32_t> api_hashes_cache;
 
-	static void _add_class(const StringName &p_class, const StringName &p_inherits);
+	static void _add_class(const StringName &p_class, const StringName &p_inherits, const StringName &p_namespace_name);
 
 	static HashMap<StringName, HashMap<StringName, Variant>> default_values;
 	static HashSet<StringName> default_values_cached;
