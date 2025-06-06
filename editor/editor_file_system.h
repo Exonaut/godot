@@ -72,7 +72,6 @@ class EditorFileSystemDirectory : public Object {
 			String icon_path;
 			bool is_abstract = false;
 			bool is_tool = false;
-			StringName namespace_name;
 		};
 		ScriptClassInfo class_info;
 	};
@@ -310,7 +309,6 @@ class EditorFileSystem : public Node {
 			update.icon_path = p_fi->class_info.icon_path;
 			update.is_abstract = p_fi->class_info.is_abstract;
 			update.is_tool = p_fi->class_info.is_tool;
-			update.namespace_name = p_fi->class_info.namespace_name;
 			return update;
 		}
 	};

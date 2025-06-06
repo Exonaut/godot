@@ -1647,7 +1647,7 @@ void Object::initialize_class() {
 	if (initialized) {
 		return;
 	}
-	_add_class_to_classdb(get_class_static(), StringName(), StringName("fish"));
+	_add_class_to_classdb(get_class_static(), StringName());
 	_bind_methods();
 	_bind_compatibility_methods();
 	initialized = true;
@@ -1723,8 +1723,8 @@ void Object::_clear_internal_resource_paths(const Variant &p_var) {
 	}
 }
 
-void Object::_add_class_to_classdb(const StringName &p_class, const StringName &p_inherits, const StringName &namespace_name) {
-	ClassDB::_add_class(p_class, p_inherits, namespace_name);
+void Object::_add_class_to_classdb(const StringName &p_class, const StringName &p_inherits) {
+	ClassDB::_add_class(p_class, p_inherits);
 }
 
 void Object::_get_property_list_from_classdb(const StringName &p_class, List<PropertyInfo> *p_list, bool p_no_inheritance, const Object *p_validator) {
@@ -2235,16 +2235,6 @@ void Object::assign_class_name_static(const Span<char> &p_name, StringName &r_ta
 		return;
 	}
 	r_target = StringName(p_name.ptr(), true);
-}
-
-void Object::assign_namespace_name_static(const Span<char> &p_namespace, StringName &r_target) {
-	static BinaryMutex _mutex;
-	MutexLock lock(_mutex);
-	if (r_target) {
-		// Already assigned while we were waiting for the mutex.
-		return;
-	}
-	r_target = StringName(p_namespace.ptr(), true);
 }
 
 Object::~Object() {

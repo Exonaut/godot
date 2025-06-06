@@ -840,11 +840,10 @@ use_script:
 	return scr.is_valid() && scr->is_valid() && scr->is_abstract();
 }
 
-void ClassDB::_add_class(const StringName &p_class, const StringName &p_inherits, const StringName &p_namespace) {
+void ClassDB::_add_class(const StringName &p_class, const StringName &p_inherits) {
 	Locker::Lock lock(Locker::STATE_WRITE);
 
 	const StringName &name = p_class;
-	const StringName &namespace_name = p_namespace;
 
 	ERR_FAIL_COND_MSG(classes.has(name), vformat("Class '%s' already exists.", String(p_class)));
 
@@ -853,7 +852,6 @@ void ClassDB::_add_class(const StringName &p_class, const StringName &p_inherits
 	ti.name = name;
 	ti.inherits = p_inherits;
 	ti.api = current_api;
-	ti.namespace_name = namespace_name;
 
 	if (ti.inherits) {
 		ERR_FAIL_COND(!classes.has(ti.inherits)); //it MUST be registered.
