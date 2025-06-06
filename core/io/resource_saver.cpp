@@ -256,13 +256,13 @@ void ResourceSaver::add_custom_savers() {
 	String custom_saver_base_class = ResourceFormatSaver::get_class_static();
 
 	List<StringName> global_classes;
-	ScriptServer::get_global_class_list(&global_classes);
+	ScriptServer::get_namespace_class_list(&global_classes);
 
 	for (const StringName &class_name : global_classes) {
-		StringName base_class = ScriptServer::get_global_class_native_base(class_name);
+		StringName base_class = ScriptServer::get_namespace_class_native_base(class_name);
 
 		if (base_class == custom_saver_base_class) {
-			String path = ScriptServer::get_global_class_path(class_name);
+			String path = ScriptServer::get_namespace_class_path(class_name);
 			add_custom_resource_format_saver(path);
 		}
 	}

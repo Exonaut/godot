@@ -3123,9 +3123,9 @@ Error ResourceImporterScene::import(ResourceUID::ID p_source_id, const String &p
 	if (!root_type.is_empty()) {
 		root_type = root_type.split(" ")[0]; // Full root_type is "ClassName (filename.gd)" for a script global class.
 		Ref<Script> root_script = nullptr;
-		if (ScriptServer::is_global_class(root_type)) {
-			root_script = ResourceLoader::load(ScriptServer::get_global_class_path(root_type));
-			root_type = ScriptServer::get_global_class_base(root_type);
+		if (ScriptServer::is_namespace_class(root_type)) {
+			root_script = ResourceLoader::load(ScriptServer::get_namespace_class_path(root_type));
+			root_type = ScriptServer::get_namespace_class_base(root_type);
 		}
 		if (scene->get_class_name() != root_type) {
 			// If the user specified a Godot node type that does not match

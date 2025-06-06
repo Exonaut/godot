@@ -179,7 +179,7 @@ public:
 		};
 	};
 
-	static HashMap<StringName, ClassInfo> classes;
+	static HashMap<StringName, HashMap<StringName, ClassDB::ClassInfo>> classes;
 	static HashMap<StringName, StringName> resource_base_extensions;
 	static HashMap<StringName, StringName> compat_classes;
 
@@ -229,7 +229,7 @@ public:
 		Locker::Lock lock(Locker::STATE_WRITE);
 		static_assert(std::is_same_v<typename T::self_type, T>, "Class not declared properly, please use GDCLASS.");
 		T::initialize_class();
-		ClassInfo *t = classes.getptr(T::get_class_static());
+		ClassInfo *t = get_class(T::get_class_static());
 		ERR_FAIL_NULL(t);
 		t->creation_func = &creator<T>;
 		t->exposed = true;
@@ -244,7 +244,7 @@ public:
 		Locker::Lock lock(Locker::STATE_WRITE);
 		static_assert(std::is_same_v<typename T::self_type, T>, "Class not declared properly, please use GDCLASS.");
 		T::initialize_class();
-		ClassInfo *t = classes.getptr(T::get_class_static());
+		ClassInfo *t = get_class(T::get_class_static());
 		ERR_FAIL_NULL(t);
 		t->exposed = true;
 		t->class_ptr = T::get_class_ptr_static();
@@ -257,7 +257,7 @@ public:
 		Locker::Lock lock(Locker::STATE_WRITE);
 		static_assert(std::is_same_v<typename T::self_type, T>, "Class not declared properly, please use GDCLASS.");
 		T::initialize_class();
-		ClassInfo *t = classes.getptr(T::get_class_static());
+		ClassInfo *t = get_class(T::get_class_static());
 		ERR_FAIL_NULL(t);
 		t->creation_func = &creator<T>;
 		t->exposed = false;
@@ -272,7 +272,7 @@ public:
 		Locker::Lock lock(Locker::STATE_WRITE);
 		static_assert(std::is_same_v<typename T::self_type, T>, "Class not declared properly, please use GDCLASS.");
 		T::initialize_class();
-		ClassInfo *t = classes.getptr(T::get_class_static());
+		ClassInfo *t = get_class(T::get_class_static());
 		ERR_FAIL_NULL(t);
 		ERR_FAIL_COND_MSG(t->inherits_ptr && !t->inherits_ptr->creation_func, vformat("Cannot register runtime class '%s' that descends from an abstract parent class.", T::get_class_static()));
 		t->creation_func = &creator<T>;
@@ -297,7 +297,7 @@ public:
 		Locker::Lock lock(Locker::STATE_WRITE);
 		static_assert(std::is_same_v<typename T::self_type, T>, "Class not declared properly, please use GDCLASS.");
 		T::initialize_class();
-		ClassInfo *t = classes.getptr(T::get_class_static());
+		ClassInfo *t = get_class(T::get_class_static());
 		ERR_FAIL_NULL(t);
 		t->creation_func = &_create_ptr_func<T>;
 		t->exposed = true;
@@ -320,6 +320,9 @@ public:
 	static StringName get_compatibility_remapped_class(const StringName &p_class);
 	static bool class_exists(const StringName &p_class);
 	static bool is_parent_class(const StringName &p_class, const StringName &p_inherits);
+	static ClassInfo *get_class(const StringName &p_class, const StringName &p_namespace = StringName());
+	static HashMap<StringName, ClassDB::ClassInfo> *get_class_map(const StringName &p_namespace = StringName());
+	static void set_class(const StringName &p_class, const ClassInfo &p_info, const StringName &p_namespace = StringName());
 	static bool can_instantiate(const StringName &p_class);
 	static bool is_abstract(const StringName &p_class);
 	static bool is_virtual(const StringName &p_class);
@@ -497,6 +500,8 @@ public:
 	static bool is_class_enabled(const StringName &p_class);
 
 	static bool is_class_exposed(const StringName &p_class);
+	static bool is_class_in_namespace(const StringName &p_class, const StringName &p_namespace);
+	static bool is_class_in_namespace(const StringName &p_class, const List<StringName> &p_namespaces);
 	static bool is_class_reloadable(const StringName &p_class);
 	static bool is_class_runtime(const StringName &p_class);
 

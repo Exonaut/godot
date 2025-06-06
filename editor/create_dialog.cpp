@@ -79,7 +79,7 @@ void CreateDialog::popup_create(bool p_dont_clear, bool p_replace_mode, const St
 void CreateDialog::_fill_type_list() {
 	List<StringName> complete_type_list;
 	ClassDB::get_class_list(&complete_type_list);
-	ScriptServer::get_global_class_list(&complete_type_list);
+	ScriptServer::get_namespace_class_list(&complete_type_list);
 
 	EditorData &ed = EditorNode::get_editor_data();
 	HashMap<String, DocData::ClassDoc> &class_docs_list = EditorHelp::get_doc_data()->class_list;
@@ -144,7 +144,7 @@ void CreateDialog::_script_button_clicked(TreeItem *p_item, int p_column, int p_
 		return;
 	}
 
-	String scr_path = ScriptServer::get_global_class_path(p_item->get_text(0));
+	String scr_path = ScriptServer::get_namespace_class_path(p_item->get_text(0));
 	Ref<Script> scr = ResourceLoader::load(scr_path, "Script");
 	ERR_FAIL_COND_MSG(scr.is_null(), vformat("Could not load the script from resource path: %s", scr_path));
 	EditorNode::get_singleton()->push_item_no_inspector(scr.ptr());
@@ -192,14 +192,14 @@ bool CreateDialog::_should_hide_type(const StringName &p_type) const {
 			}
 		}
 	} else {
-		if (!ScriptServer::is_global_class(p_type)) {
+		if (!ScriptServer::is_namespace_class(p_type)) {
 			return true;
 		}
 		if (!EditorNode::get_editor_data().script_class_is_parent(p_type, base_type)) {
 			return true; // Wrong inheritance.
 		}
 
-		StringName native_type = ScriptServer::get_global_class_native_base(p_type);
+		StringName native_type = ScriptServer::get_namespace_class_native_base(p_type);
 		if (ClassDB::class_exists(native_type)) {
 			if (!ClassDB::can_instantiate(native_type)) {
 				return true;
@@ -208,7 +208,7 @@ bool CreateDialog::_should_hide_type(const StringName &p_type) const {
 			}
 		}
 
-		String script_path = ScriptServer::get_global_class_path(p_type);
+		String script_path = ScriptServer::get_namespace_class_path(p_type);
 		if (script_path.begins_with("res://addons/")) {
 			int i = script_path.find_char('/', 13); // 13 is length of "res://addons/".
 			while (i > -1) {
@@ -220,7 +220,7 @@ bool CreateDialog::_should_hide_type(const StringName &p_type) const {
 			}
 		}
 		// Abstract scripts cannot be instantiated.
-		String path = ScriptServer::get_global_class_path(p_type);
+		String path = ScriptServer::get_namespace_class_path(p_type);
 		Ref<Script> scr = ResourceLoader::load(path, "Script");
 		return scr.is_null() || scr->is_abstract();
 	}
@@ -324,8 +324,8 @@ void CreateDialog::_add_type(const StringName &p_type, TypeCategory p_type_categ
 					inherited_type = TypeCategory::PATH_TYPE;
 				}
 			}
-		} else if (ScriptServer::is_global_class(p_type)) {
-			inherits = ScriptServer::get_global_class_base(p_type);
+		} else if (ScriptServer::is_namespace_class(p_type)) {
+			inherits = ScriptServer::get_namespace_class_base(p_type);
 			bool is_native_class = ClassDB::class_exists(inherits);
 			inherited_type = is_native_class ? TypeCategory::CPP_TYPE : TypeCategory::OTHER_TYPE;
 		} else {
@@ -347,7 +347,7 @@ void CreateDialog::_add_type(const StringName &p_type, TypeCategory p_type_categ
 }
 
 void CreateDialog::_configure_search_option_item(TreeItem *r_item, const StringName &p_type, TypeCategory p_type_category, const String &p_match_keyword) {
-	bool script_type = ScriptServer::is_global_class(p_type);
+	bool script_type = ScriptServer::is_namespace_class(p_type);
 	bool is_abstract = false;
 	bool is_custom_type = false;
 	String type_name;
@@ -363,14 +363,14 @@ void CreateDialog::_configure_search_option_item(TreeItem *r_item, const StringN
 		type_name = p_type;
 		text = p_type;
 
-		is_abstract = ScriptServer::is_global_class_abstract(p_type);
+		is_abstract = ScriptServer::is_namespace_class_abstract(p_type);
 
 		String tooltip = TTR("Script path: %s");
-		bool is_tool = ScriptServer::is_global_class_tool(p_type);
+		bool is_tool = ScriptServer::is_namespace_class_tool(p_type);
 		if (is_tool) {
 			tooltip = TTR("The script will run in the editor.") + "\n" + tooltip;
 		}
-		r_item->add_button(0, get_editor_theme_icon(SNAME("Script")), 1, false, vformat(tooltip, ScriptServer::get_global_class_path(p_type)));
+		r_item->add_button(0, get_editor_theme_icon(SNAME("Script")), 1, false, vformat(tooltip, ScriptServer::get_namespace_class_path(p_type)));
 		if (is_tool) {
 			int button_index = r_item->get_button_count(0) - 1;
 			r_item->set_button_color(0, button_index, get_theme_color(SNAME("accent_color"), EditorStringName(Editor)));
@@ -634,7 +634,7 @@ Variant CreateDialog::instantiate_selected() {
 	String type_name = meta[1].operator String();
 	Variant obj;
 	if (is_custom_type) {
-		if (ScriptServer::is_global_class(type_name)) {
+		if (ScriptServer::is_namespace_class(type_name)) {
 			obj = EditorNode::get_editor_data().script_class_instance(type_name);
 			Node *n = Object::cast_to<Node>(obj);
 			if (n) {

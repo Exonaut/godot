@@ -67,7 +67,7 @@ class ScriptServer {
 		StringName namespace_name;
 	};
 
-	static HashMap<StringName, GlobalScriptClass> global_classes;
+	static HashMap<StringName, HashMap<StringName, GlobalScriptClass>> namespace_classes;
 	static HashMap<StringName, Vector<StringName>> inheriters_cache;
 	static bool inheriters_cache_dirty;
 
@@ -88,21 +88,21 @@ public:
 	static void thread_enter();
 	static void thread_exit();
 
-	static void global_classes_clear();
-	static void add_global_class(const StringName &p_class, const StringName &p_base, const StringName &p_language, const String &p_path, bool p_is_abstract, bool p_is_tool, StringName namespace_name = StringName());
-	static void remove_global_class(const StringName &p_class);
-	static void remove_global_class_by_path(const String &p_path);
-	static bool is_global_class(const StringName &p_class);
-	static StringName get_global_class_language(const StringName &p_class);
-	static String get_global_class_path(const String &p_class);
-	static StringName get_global_class_base(const String &p_class);
-	static StringName get_global_class_native_base(const String &p_class);
-	static bool is_global_class_abstract(const String &p_class);
-	static bool is_global_class_tool(const String &p_class);
-	static void get_global_class_list(List<StringName> *r_global_classes);
-	static void get_global_class_list(List<StringName> *r_global_classes, const StringName &p_namespace);
-	static void get_inheriters_list(const StringName &p_base_type, List<StringName> *r_classes);
-	static void save_global_classes();
+	static void namespace_classes_clear();
+	static void add_namespace_class(const StringName &p_class, const StringName &p_base, const StringName &p_language, const String &p_path, bool p_is_abstract, bool p_is_tool, StringName namespace_name = StringName());
+	static void remove_namespace_class(const StringName &p_class, const StringName &p_namespace = StringName());
+	static void remove_namespace_class_by_path(const String &p_path);
+	static bool is_namespace_class(const StringName &p_class, const StringName &p_namespace = StringName());
+	static StringName get_namespace_class_language(const StringName &p_class, const StringName &p_namespace = StringName());
+	static String get_namespace_class_path(const StringName &p_class, const StringName &p_namespace = StringName());
+	static StringName get_namespace_class_base(const StringName &p_class, const StringName &p_namespace = StringName());
+	static StringName get_namespace_class_native_base(const StringName &p_class, const StringName &p_namespace = StringName());
+	static bool is_namespace_class_abstract(const StringName &p_class, const StringName &p_namespace = StringName());
+	static bool is_namespace_class_tool(const StringName &p_class, const StringName &p_namespace = StringName());
+	static void get_namespace_class_list(List<StringName> *r_namespace_classes, const StringName &p_namespace = StringName());
+	static void get_namespace_class_list(List<StringName> *r_namespace_classes, List<StringName> &p_namespaces);
+	static void get_inheriters_list(const StringName &p_base_type, List<StringName> *r_classes, const StringName &p_namespace = StringName());
+	static void save_namespace_classes();
 
 	static Vector<Ref<ScriptBacktrace>> capture_script_backtraces(bool p_include_variables = false);
 

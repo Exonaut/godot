@@ -724,7 +724,7 @@ void GDScriptSyntaxHighlighter::_update_cache() {
 	/* User types. */
 	const Color usertype_color = EDITOR_GET("text_editor/theme/highlighting/user_type_color");
 	List<StringName> global_classes;
-	ScriptServer::get_global_class_list(&global_classes);
+	ScriptServer::get_namespace_class_list(&global_classes);
 	for (const StringName &E : global_classes) {
 		class_names[E] = usertype_color;
 	}

@@ -2127,11 +2127,11 @@ void VisualShaderEditor::_update_nodes() {
 	// Add GDScript classes.
 	{
 		List<StringName> class_list;
-		ScriptServer::get_global_class_list(&class_list);
+		ScriptServer::get_namespace_class_list(&class_list);
 
 		for (const StringName &E : class_list) {
-			if (ScriptServer::get_global_class_native_base(E) == "VisualShaderNodeCustom") {
-				String script_path = ScriptServer::get_global_class_path(E);
+			if (ScriptServer::get_namespace_class_native_base(E) == "VisualShaderNodeCustom") {
+				String script_path = ScriptServer::get_namespace_class_path(E);
 				Ref<Resource> res = ResourceLoader::load(script_path);
 				ERR_CONTINUE(res.is_null());
 				ERR_CONTINUE(!res->is_class("Script"));

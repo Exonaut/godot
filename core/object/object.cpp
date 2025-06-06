@@ -1647,7 +1647,7 @@ void Object::initialize_class() {
 	if (initialized) {
 		return;
 	}
-	_add_class_to_classdb(get_class_static(), StringName(), StringName("fish"));
+	_add_class_to_classdb(get_class_static(), StringName(), StringName());
 	_bind_methods();
 	_bind_compatibility_methods();
 	initialized = true;

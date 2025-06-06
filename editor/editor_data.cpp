@@ -575,7 +575,7 @@ const EditorData::CustomType *EditorData::get_custom_type_by_path(const String &
 }
 
 bool EditorData::is_type_recognized(const String &p_type) const {
-	return ClassDB::class_exists(p_type) || ScriptServer::is_global_class(p_type) || get_custom_type_by_name(p_type);
+	return ClassDB::class_exists(p_type) || ScriptServer::is_namespace_class(p_type) || get_custom_type_by_name(p_type);
 }
 
 void EditorData::remove_custom_type(const String &p_type) {
@@ -965,7 +965,7 @@ void EditorData::get_plugin_window_layout(Ref<ConfigFile> p_layout) {
 }
 
 bool EditorData::script_class_is_parent(const String &p_class, const String &p_inherits) {
-	if (!ScriptServer::is_global_class(p_class)) {
+	if (!ScriptServer::is_namespace_class(p_class)) {
 		return false;
 	}
 
@@ -973,8 +973,8 @@ bool EditorData::script_class_is_parent(const String &p_class, const String &p_i
 	while (base != p_inherits) {
 		if (ClassDB::class_exists(base)) {
 			return ClassDB::is_parent_class(base, p_inherits);
-		} else if (ScriptServer::is_global_class(base)) {
-			base = ScriptServer::get_global_class_base(base);
+		} else if (ScriptServer::is_namespace_class(base)) {
+			base = ScriptServer::get_namespace_class_base(base);
 		} else {
 			return false;
 		}
@@ -983,7 +983,7 @@ bool EditorData::script_class_is_parent(const String &p_class, const String &p_i
 }
 
 Variant EditorData::script_class_instance(const String &p_class) {
-	if (ScriptServer::is_global_class(p_class)) {
+	if (ScriptServer::is_namespace_class(p_class)) {
 		Ref<Script> script = script_class_load_script(p_class);
 		if (script.is_valid()) {
 			// Store in a variant to initialize the refcount if needed.
@@ -1000,11 +1000,11 @@ Variant EditorData::script_class_instance(const String &p_class) {
 }
 
 Ref<Script> EditorData::script_class_load_script(const String &p_class) const {
-	if (!ScriptServer::is_global_class(p_class)) {
+	if (!ScriptServer::is_namespace_class(p_class)) {
 		return Ref<Script>();
 	}
 
-	String path = ScriptServer::get_global_class_path(p_class);
+	String path = ScriptServer::get_namespace_class_path(p_class);
 	return ResourceLoader::load(path, "Script");
 }
 
@@ -1015,7 +1015,7 @@ void EditorData::script_class_set_icon_path(const String &p_class, const String 
 String EditorData::script_class_get_icon_path(const String &p_class, bool *r_valid) const {
 	String current = p_class;
 	while (true) {
-		if (!ScriptServer::is_global_class(current)) {
+		if (!ScriptServer::is_namespace_class(current)) {
 			// If the classnames chain has a native class ancestor, we're done with success.
 			if (r_valid) {
 				*r_valid = ClassDB::class_exists(current);
@@ -1031,7 +1031,7 @@ String EditorData::script_class_get_icon_path(const String &p_class, bool *r_val
 				return E->value;
 			}
 		}
-		current = ScriptServer::get_global_class_base(current);
+		current = ScriptServer::get_namespace_class_base(current);
 	}
 }
 
@@ -1045,18 +1045,18 @@ void EditorData::script_class_set_name(const String &p_path, const StringName &p
 
 void EditorData::script_class_save_global_classes() {
 	List<StringName> global_classes;
-	ScriptServer::get_global_class_list(&global_classes);
+	ScriptServer::get_namespace_class_list(&global_classes);
 	Array array_classes;
 	for (const StringName &class_name : global_classes) {
 		Dictionary d;
 		String *icon = _script_class_icon_paths.getptr(class_name);
 		d["class"] = class_name;
-		d["language"] = ScriptServer::get_global_class_language(class_name);
-		d["path"] = ScriptServer::get_global_class_path(class_name);
-		d["base"] = ScriptServer::get_global_class_base(class_name);
+		d["language"] = ScriptServer::get_namespace_class_language(class_name);
+		d["path"] = ScriptServer::get_namespace_class_path(class_name);
+		d["base"] = ScriptServer::get_namespace_class_base(class_name);
 		d["icon"] = icon ? *icon : String();
-		d["is_abstract"] = ScriptServer::is_global_class_abstract(class_name);
-		d["is_tool"] = ScriptServer::is_global_class_tool(class_name);
+		d["is_abstract"] = ScriptServer::is_namespace_class_abstract(class_name);
+		d["is_tool"] = ScriptServer::is_namespace_class_tool(class_name);
 		array_classes.push_back(d);
 	}
 	ProjectSettings::get_singleton()->store_global_class_list(array_classes);
@@ -1073,7 +1073,7 @@ void EditorData::script_class_load_icon_paths() {
 			String name = kv.key.operator String();
 			_script_class_icon_paths[name] = kv.value;
 
-			String path = ScriptServer::get_global_class_path(name);
+			String path = ScriptServer::get_namespace_class_path(name);
 			script_class_set_name(path, name);
 		}
 		ProjectSettings::get_singleton()->clear("_global_script_class_icons");

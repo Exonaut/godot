@@ -37,7 +37,7 @@
 Ref<EditorScript> create_instance(const StringName &p_name) {
 	Ref<EditorScript> es;
 	es.instantiate();
-	Ref<Script> scr = ResourceLoader::load(ScriptServer::get_global_class_path(p_name), "Script", ResourceFormatLoader::CACHE_MODE_REUSE);
+	Ref<Script> scr = ResourceLoader::load(ScriptServer::get_namespace_class_path(p_name), "Script", ResourceFormatLoader::CACHE_MODE_REUSE);
 	if (scr.is_valid()) {
 		es->set_script(scr);
 	}

@@ -126,7 +126,7 @@ void init_language(const String &p_base_path) {
 
 void finish_language() {
 	GDScriptLanguage::get_singleton()->finish();
-	ScriptServer::global_classes_clear();
+	ScriptServer::namespace_classes_clear();
 }
 
 StringName GDScriptTestRunner::test_function_name;
@@ -376,11 +376,11 @@ static bool generate_class_index_recursive(const String &p_dir) {
 				next = dir->get_next();
 				continue;
 			}
-			ERR_FAIL_COND_V_MSG(ScriptServer::is_global_class(class_name), false,
-					"Class name '" + class_name + "' from " + source_file + " is already used in " + ScriptServer::get_global_class_path(class_name));
+			ERR_FAIL_COND_V_MSG(ScriptServer::is_namespace_class(class_name), false,
+					"Class name '" + class_name + "' from " + source_file + " is already used in " + ScriptServer::get_namespace_class_path(class_name));
 
 			print_line(vformat("Adding class '%s' with base type '%s' from source file '%s' with namespace '%s'.", class_name, base_type, source_file, namespace_name));
-			ScriptServer::add_global_class(class_name, base_type, gdscript_name, source_file, is_abstract, is_tool, namespace_name);
+			ScriptServer::add_namespace_class(class_name, base_type, gdscript_name, source_file, is_abstract, is_tool, namespace_name);
 		}
 
 		next = dir->get_next();

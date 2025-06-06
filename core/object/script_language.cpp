@@ -262,7 +262,7 @@ Error ScriptServer::unregister_language(const ScriptLanguage *p_language) {
 
 void ScriptServer::init_languages() {
 	{ // Load global classes.
-		global_classes_clear();
+		namespace_classes_clear();
 #ifndef DISABLE_DEPRECATED
 		if (ProjectSettings::get_singleton()->has_setting("_global_script_classes")) {
 			Array script_classes = GLOBAL_GET("_global_script_classes");
@@ -273,7 +273,7 @@ void ScriptServer::init_languages() {
 					continue;
 				}
 				print_line(vformat("F1 Loading global class '%s' with namespace: '%s'.", c["class"], c["namespace"]));
-				add_global_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
+				add_namespace_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
 			}
 			ProjectSettings::get_singleton()->clear("_global_script_classes");
 		}
@@ -286,7 +286,7 @@ void ScriptServer::init_languages() {
 				continue;
 			}
 			print_line(vformat("F2 Loading global class '%s' with namespace: '%s'.", c["class"], c["namespace"]));
-			add_global_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
+			add_namespace_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
 		}
 	}
 
@@ -331,7 +331,7 @@ void ScriptServer::finish_languages() {
 		languages_ready = false;
 	}
 
-	global_classes_clear();
+	namespace_classes_clear();
 }
 
 bool ScriptServer::are_languages_initialized() {
@@ -383,19 +383,31 @@ void ScriptServer::thread_exit() {
 	thread_entered = false;
 }
 
-HashMap<StringName, ScriptServer::GlobalScriptClass> ScriptServer::global_classes;
+HashMap<StringName, HashMap<StringName, ScriptServer::GlobalScriptClass>> ScriptServer::namespace_classes;
 HashMap<StringName, Vector<StringName>> ScriptServer::inheriters_cache;
 bool ScriptServer::inheriters_cache_dirty = true;
 
-void ScriptServer::global_classes_clear() {
-	global_classes.clear();
+void ScriptServer::namespace_classes_clear() {
+	namespace_classes.clear();
 	inheriters_cache.clear();
 }
 
-void ScriptServer::add_global_class(const StringName &p_class, const StringName &p_base, const StringName &p_language, const String &p_path, bool p_is_abstract, bool p_is_tool, StringName namespace_name) {
-	ERR_FAIL_COND_MSG(p_class == p_base || (global_classes.has(p_base) && get_global_class_native_base(p_base) == p_class), "Cyclic inheritance in script class.");
-	GlobalScriptClass *existing = global_classes.getptr(p_class);
-	print_line(vformat("Adding global class '%s' with namespace: '%s'.", p_class, namespace_name));
+void ScriptServer::add_namespace_class(const StringName &p_class, const StringName &p_base, const StringName &p_language, const String &p_path, bool p_is_abstract, bool p_is_tool, StringName namespace_name) {
+	if (!namespace_classes.has(namespace_name)) {
+		print_line(vformat("ScriptLanguage: Creating namespace '%s' for global classes.", namespace_name));
+		namespace_classes[namespace_name] = HashMap<StringName, GlobalScriptClass>();
+	}
+	HashMap<StringName, ScriptServer::GlobalScriptClass> *classes = ScriptServer::namespace_classes.getptr(namespace_name);
+
+	// Check for cyclic inheritance within the same namespace.
+	ERR_FAIL_COND_MSG(
+		p_class == p_base ||
+		(classes->has(p_base) && get_namespace_class_native_base(p_base, namespace_name) == p_class),
+		"Cyclic inheritance in script class."
+	);
+
+	GlobalScriptClass *existing = classes->getptr(p_class);
+	print_line(vformat("ScriptLanguage: Adding global class '%s' with namespace: '%s'.", p_class, namespace_name));
 	if (existing) {
 		// Update an existing class (only set dirty if something changed).
 		if (existing->base != p_base || existing->path != p_path || existing->language != p_language) {
@@ -404,7 +416,6 @@ void ScriptServer::add_global_class(const StringName &p_class, const StringName 
 			existing->language = p_language;
 			existing->is_abstract = p_is_abstract;
 			existing->is_tool = p_is_tool;
-			existing->namespace_name = namespace_name;
 			inheriters_cache_dirty = true;
 		}
 	} else {
@@ -416,24 +427,30 @@ void ScriptServer::add_global_class(const StringName &p_class, const StringName 
 		g.is_abstract = p_is_abstract;
 		g.is_tool = p_is_tool;
 		g.namespace_name = namespace_name;
-		global_classes[p_class] = g;
+		classes->insert(p_class, g);
 		inheriters_cache_dirty = true;
 	}
 }
 
-void ScriptServer::remove_global_class(const StringName &p_class) {
-	global_classes.erase(p_class);
+void ScriptServer::remove_namespace_class(const StringName &p_class, const StringName &namespace_name) {
+	namespace_classes[namespace_name].erase(p_class);
 	inheriters_cache_dirty = true;
 }
 
-void ScriptServer::get_inheriters_list(const StringName &p_base_type, List<StringName> *r_classes) {
+void ScriptServer::get_inheriters_list(const StringName &p_base_type, List<StringName> *r_classes, const StringName &p_namespace) {
 	if (inheriters_cache_dirty) {
 		inheriters_cache.clear();
-		for (const KeyValue<StringName, GlobalScriptClass> &K : global_classes) {
-			if (!inheriters_cache.has(K.value.base)) {
-				inheriters_cache[K.value.base] = Vector<StringName>();
+		for (const KeyValue<StringName, HashMap<StringName, GlobalScriptClass>> &namespace_kv : namespace_classes) {
+			for (const KeyValue<StringName, GlobalScriptClass> &K : namespace_kv.value) {
+				StringName base = K.value.base;
+				StringName ns = namespace_kv.key;
+				// Use a composite key for namespace + base type.
+				StringName composite_key = StringName(String(ns) + "::" + String(base));
+				if (!inheriters_cache.has(composite_key)) {
+					inheriters_cache[composite_key] = Vector<StringName>();
+				}
+				inheriters_cache[composite_key].push_back(K.key);
 			}
-			inheriters_cache[K.value.base].push_back(K.key);
 		}
 		for (KeyValue<StringName, Vector<StringName>> &K : inheriters_cache) {
 			K.value.sort_custom<StringName::AlphCompare>();
@@ -441,94 +458,120 @@ void ScriptServer::get_inheriters_list(const StringName &p_base_type, List<Strin
 		inheriters_cache_dirty = false;
 	}
 
-	if (!inheriters_cache.has(p_base_type)) {
+	StringName composite_key = StringName(String(p_namespace) + "::" + String(p_base_type));
+	if (!inheriters_cache.has(composite_key)) {
 		return;
 	}
 
-	const Vector<StringName> &v = inheriters_cache[p_base_type];
+	const Vector<StringName> &v = inheriters_cache[composite_key];
 	for (int i = 0; i < v.size(); i++) {
 		r_classes->push_back(v[i]);
 	}
 }
 
-void ScriptServer::remove_global_class_by_path(const String &p_path) {
-	for (const KeyValue<StringName, GlobalScriptClass> &kv : global_classes) {
-		if (kv.value.path == p_path) {
-			global_classes.erase(kv.key);
-			inheriters_cache_dirty = true;
-			return;
+void ScriptServer::remove_namespace_class_by_path(const String &p_path) {
+	for (KeyValue<StringName, HashMap<StringName, GlobalScriptClass>> &ns_kv : namespace_classes) {
+		for (KeyValue<StringName, GlobalScriptClass> &kv : ns_kv.value) {
+			if (kv.value.path == p_path) {
+				ns_kv.value.erase(kv.key);
+				inheriters_cache_dirty = true;
+				return;
+			}
 		}
 	}
 }
 
-bool ScriptServer::is_global_class(const StringName &p_class) {
-	return global_classes.has(p_class);
+bool ScriptServer::is_namespace_class(const StringName &p_class, const StringName &p_namespace) {
+	if (!namespace_classes.has(p_namespace)) {
+		return false;
+	}
+	return namespace_classes[p_namespace].has(p_class);
 }
 
-StringName ScriptServer::get_global_class_language(const StringName &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), StringName());
-	return global_classes[p_class].language;
+StringName ScriptServer::get_namespace_class_language(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), StringName());
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	ERR_FAIL_COND_V(!classes.has(p_class), StringName());
+	return classes[p_class].language;
 }
 
-String ScriptServer::get_global_class_path(const String &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), String());
-	return global_classes[p_class].path;
+String ScriptServer::get_namespace_class_path(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), String());
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	ERR_FAIL_COND_V(!classes.has(p_class), String());
+	return classes[p_class].path;
 }
 
-StringName ScriptServer::get_global_class_base(const String &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), String());
-	return global_classes[p_class].base;
+StringName ScriptServer::get_namespace_class_base(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), StringName());
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	ERR_FAIL_COND_V(!classes.has(p_class), StringName());
+	return classes[p_class].base;
 }
 
-StringName ScriptServer::get_global_class_native_base(const String &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), String());
-	String base = global_classes[p_class].base;
-	while (global_classes.has(base)) {
-		base = global_classes[base].base;
+StringName ScriptServer::get_namespace_class_native_base(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), StringName());
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	
+	// print_line every class in the namespace
+	for (const KeyValue<StringName, GlobalScriptClass> &E : classes) {
+		print_line(vformat("Namespace '%s' class '%s' base '%s'.", p_namespace, E.key, E.value.base));
+	}
+
+
+	ERR_FAIL_COND_V(!classes.has(p_class), StringName());
+	StringName base = classes[p_class].base;
+	while (classes.has(base)) {
+		base = classes[base].base;
 	}
 	return base;
 }
 
-bool ScriptServer::is_global_class_abstract(const String &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), false);
-	return global_classes[p_class].is_abstract;
+bool ScriptServer::is_namespace_class_abstract(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), false);
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	ERR_FAIL_COND_V(!classes.has(p_class), false);
+	return classes[p_class].is_abstract;
 }
 
-bool ScriptServer::is_global_class_tool(const String &p_class) {
-	ERR_FAIL_COND_V(!global_classes.has(p_class), false);
-	return global_classes[p_class].is_tool;
+bool ScriptServer::is_namespace_class_tool(const StringName &p_class, const StringName &p_namespace) {
+	ERR_FAIL_COND_V(!namespace_classes.has(p_namespace), false);
+	const HashMap<StringName, GlobalScriptClass> &classes = namespace_classes[p_namespace];
+	ERR_FAIL_COND_V(!classes.has(p_class), false);
+	return classes[p_class].is_tool;
 }
 
-void ScriptServer::get_global_class_list(List<StringName> *r_global_classes) {
+void ScriptServer::get_namespace_class_list(List<StringName> *r_namespace_classes, const StringName &p_namespace) {
+	if (!namespace_classes.has(p_namespace)) {
+		return;
+	}
 	List<StringName> classes;
-	for (const KeyValue<StringName, GlobalScriptClass> &E : global_classes) {
-		print_line(vformat("F1 Checking class '%s' with namespace '%s'.", E.key, E.value.namespace_name));
+	for (const KeyValue<StringName, GlobalScriptClass> &E : namespace_classes[p_namespace]) {
 		classes.push_back(E.key);
 	}
 	classes.sort_custom<StringName::AlphCompare>();
 	for (const StringName &E : classes) {
-		r_global_classes->push_back(E);
+		r_namespace_classes->push_back(E);
 	}
 }
 
-void ScriptServer::get_global_class_list(List<StringName> *r_global_classes, const StringName &p_namespace) {
-	List<StringName> classes;
-	for (const KeyValue<StringName, GlobalScriptClass> &E : global_classes) {
-		print_line(vformat("F2 Checking class '%s' with namespace '%s' against '%s'.", E.key, E.value.namespace_name, p_namespace));
-		print_line(vformat("Namespace check: %s", E.value.namespace_name.is_empty()));
-		if (!E.value.namespace_name.is_empty() && E.value.namespace_name != p_namespace) {
-			print_line(vformat("Skipping class '%s' in namespace '%s' as it does not match requested namespace '%s'.", E.key, E.value.namespace_name, p_namespace));
-			continue; // Skip classes not in the requested namespace.
+void ScriptServer::get_namespace_class_list(List<StringName> *r_namespace_classes, List<StringName> &p_namespaces) {
+	for (const StringName &ns : p_namespaces) {
+		if (!namespace_classes.has(ns)) {
+			continue;
 		}
-		classes.push_back(E.key);
-	}
-	classes.sort_custom<StringName::AlphCompare>();
-	for (const StringName &E : classes) {
-		r_global_classes->push_back(E);
+		List<StringName> classes;
+		for (const KeyValue<StringName, GlobalScriptClass> &E : namespace_classes[ns]) {
+			classes.push_back(E.key);
+		}
+		classes.sort_custom<StringName::AlphCompare>();
+		for (const StringName &E : classes) {
+			r_namespace_classes->push_back(E);
+		}
 	}
 }
 
-void ScriptServer::save_global_classes() {
+void ScriptServer::save_namespace_classes() {
 	Dictionary class_icons;
 
 	Array script_classes = ProjectSettings::get_singleton()->get_global_class_list();
@@ -540,21 +583,21 @@ void ScriptServer::save_global_classes() {
 		class_icons[d["name"]] = d["icon"];
 	}
 
-	List<StringName> gc;
-	get_global_class_list(&gc);
 	Array gcarr;
-	for (const StringName &E : gc) {
-		const GlobalScriptClass &global_class = global_classes[E];
-		Dictionary d;
-		d["class"] = E;
-		d["language"] = global_class.language;
-		d["path"] = global_class.path;
-		d["base"] = global_class.base;
-		d["icon"] = class_icons.get(E, "");
-		d["is_abstract"] = global_class.is_abstract;
-		d["is_tool"] = global_class.is_tool;
-		d["namespace"] = global_class.namespace_name;
-		gcarr.push_back(d);
+	for (const KeyValue<StringName, HashMap<StringName, GlobalScriptClass>> &ns_kv : namespace_classes) {
+		for (const KeyValue<StringName, GlobalScriptClass> &E : ns_kv.value) {
+			const GlobalScriptClass &global_class = E.value;
+			Dictionary d;
+			d["class"] = E.key;
+			d["language"] = global_class.language;
+			d["path"] = global_class.path;
+			d["base"] = global_class.base;
+			d["icon"] = class_icons.get(E.key, "");
+			d["is_abstract"] = global_class.is_abstract;
+			d["is_tool"] = global_class.is_tool;
+			d["namespace"] = global_class.namespace_name;
+			gcarr.push_back(d);
+		}
 	}
 	ProjectSettings::get_singleton()->store_global_class_list(gcarr);
 }

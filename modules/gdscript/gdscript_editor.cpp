@@ -938,9 +938,9 @@ static void _find_annotation_arguments(const GDScriptParser::AnnotationNode *p_a
 		}
 
 		List<StringName> global_script_classes;
-		ScriptServer::get_global_class_list(&global_script_classes);
+		ScriptServer::get_namespace_class_list(&global_script_classes);
 		for (const StringName &E : global_script_classes) {
-			if (!ClassDB::is_parent_class(ScriptServer::get_global_class_native_base(E), "Node")) {
+			if (!ClassDB::is_parent_class(ScriptServer::get_namespace_class_native_base(E), "Node")) {
 				continue;
 			}
 			ScriptLanguage::CodeCompletionOption option(E, ScriptLanguage::CODE_COMPLETION_KIND_CLASS);
@@ -1058,11 +1058,13 @@ static void _list_available_types(bool p_inherit_only, GDScriptParser::Completio
 		}
 	}
 
-	// Global scripts
-	List<StringName> global_classes;
-	StringName current_namespace = p_context.current_class->namespace_name;
-	ScriptServer::get_global_class_list(&global_classes, current_namespace);
-	for (const StringName &E : global_classes) {
+	// Namespace classes
+	List<StringName> namespace_classes;
+	List<StringName> current_namespaces;
+	current_namespaces.push_back(StringName()); // Global namespace
+	current_namespaces.push_back(p_context.current_class->namespace_name);
+	ScriptServer::get_namespace_class_list(&namespace_classes, current_namespaces);
+	for (const StringName &E : namespace_classes) {
 		ScriptLanguage::CodeCompletionOption option(E, ScriptLanguage::CODE_COMPLETION_KIND_CLASS, ScriptLanguage::LOCATION_OTHER_USER_CODE);
 		r_result.insert(option.display, option);
 	}
@@ -1556,10 +1558,12 @@ static void _find_identifiers(const GDScriptParser::CompletionContext &p_context
 		r_result.insert(option.display, option);
 	}
 
-	// Global classes
+	// Namespace classes
 	List<StringName> global_classes;
-	StringName current_namespace = p_context.current_class->namespace_name;
-	ScriptServer::get_global_class_list(&global_classes, current_namespace);
+	List<StringName> current_namespaces;
+	current_namespaces.push_back(StringName()); // Global namespace
+	current_namespaces.push_back(p_context.current_class->namespace_name);
+	ScriptServer::get_namespace_class_list(&global_classes, current_namespaces);
 	for (const StringName &E : global_classes) {
 		ScriptLanguage::CodeCompletionOption option(E, ScriptLanguage::CODE_COMPLETION_KIND_CLASS, ScriptLanguage::LOCATION_OTHER_USER_CODE);
 		r_result.insert(option.display, option);
@@ -1625,12 +1629,12 @@ static GDScriptCompletionIdentifier _type_from_property(const PropertyInfo &p_pr
 	ci.type.type_source = GDScriptParser::DataType::ANNOTATED_EXPLICIT;
 	ci.type.builtin_type = p_property.type;
 	if (p_property.type == Variant::OBJECT) {
-		if (ScriptServer::is_global_class(p_property.class_name)) {
+		if (ScriptServer::is_namespace_class(p_property.class_name)) {
 			ci.type.kind = GDScriptParser::DataType::SCRIPT;
-			ci.type.script_path = ScriptServer::get_global_class_path(p_property.class_name);
-			ci.type.native_type = ScriptServer::get_global_class_native_base(p_property.class_name);
+			ci.type.script_path = ScriptServer::get_namespace_class_path(p_property.class_name);
+			ci.type.native_type = ScriptServer::get_namespace_class_native_base(p_property.class_name);
 
-			Ref<Script> scr = ResourceLoader::load(ScriptServer::get_global_class_path(p_property.class_name));
+			Ref<Script> scr = ResourceLoader::load(ScriptServer::get_namespace_class_path(p_property.class_name));
 			if (scr.is_valid()) {
 				ci.type.script_type = scr;
 			}
@@ -2378,8 +2382,8 @@ static bool _guess_identifier_type(GDScriptParser::CompletionContext &p_context,
 	}
 
 	// Check global scripts.
-	if (ScriptServer::is_global_class(p_identifier->name)) {
-		String script = ScriptServer::get_global_class_path(p_identifier->name);
+	if (ScriptServer::is_namespace_class(p_identifier->name)) {
+		String script = ScriptServer::get_namespace_class_path(p_identifier->name);
 		if (script.to_lower().ends_with(".gd")) {
 			Ref<GDScriptParserRef> parser = p_context.parser->get_depended_parser_for(script);
 			if (parser.is_valid() && parser->raise_status(GDScriptParserRef::INTERFACE_SOLVED) == OK) {
@@ -2393,7 +2397,7 @@ static bool _guess_identifier_type(GDScriptParser::CompletionContext &p_context,
 				return true;
 			}
 		} else {
-			Ref<Script> scr = ResourceLoader::load(ScriptServer::get_global_class_path(p_identifier->name));
+			Ref<Script> scr = ResourceLoader::load(ScriptServer::get_namespace_class_path(p_identifier->name));
 			if (scr.is_valid()) {
 				r_type = _type_from_variant(scr, p_context);
 				r_type.type.is_meta_type = true;
@@ -3483,9 +3487,9 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
 				if (ClassDB::class_exists(type_name)) {
 					base.type.kind = GDScriptParser::DataType::NATIVE;
 					base.type.native_type = type_name;
-				} else if (ScriptServer::is_global_class(type_name)) {
+				} else if (ScriptServer::is_namespace_class(type_name)) {
 					base.type.kind = GDScriptParser::DataType::SCRIPT;
-					String scr_path = ScriptServer::get_global_class_path(type_name);
+					String scr_path = ScriptServer::get_namespace_class_path(type_name);
 					base.type.script_type = ResourceLoader::load(scr_path);
 				}
 			}
@@ -4172,8 +4176,8 @@ static Error _lookup_symbol_from_base(const GDScriptParser::DataType &p_base, co
 	const GDScriptParser::TypeNode *type_node = dynamic_cast<const GDScriptParser::TypeNode *>(context.node);
 	if (type_node != nullptr && !type_node->type_chain.is_empty()) {
 		StringName class_name = type_node->type_chain[0]->name;
-		if (ScriptServer::is_global_class(class_name)) {
-			class_name = ScriptServer::get_global_class_native_base(class_name);
+		if (ScriptServer::is_namespace_class(class_name)) {
+			class_name = ScriptServer::get_namespace_class_native_base(class_name);
 		}
 		do {
 			List<StringName> enums;
@@ -4296,8 +4300,8 @@ static Error _lookup_symbol_from_base(const GDScriptParser::DataType &p_base, co
 					}
 				}
 
-				if (ScriptServer::is_global_class(p_symbol)) {
-					const String scr_path = ScriptServer::get_global_class_path(p_symbol);
+				if (ScriptServer::is_namespace_class(p_symbol)) {
+					const String scr_path = ScriptServer::get_namespace_class_path(p_symbol);
 					const Ref<Script> scr = ResourceLoader::load(scr_path);
 					if (scr.is_null()) {
 						return ERR_BUG;

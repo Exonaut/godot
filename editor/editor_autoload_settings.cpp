@@ -109,7 +109,7 @@ bool EditorAutoloadSettings::_autoload_name_is_valid(const String &p_name, Strin
 		return false;
 	}
 
-	if (ScriptServer::is_global_class(p_name)) {
+	if (ScriptServer::is_namespace_class(p_name)) {
 		if (r_error) {
 			*r_error = TTR("Invalid name.") + "\n" + TTR("Must not collide with an existing global script class name.");
 		}

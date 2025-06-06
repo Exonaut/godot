@@ -693,8 +693,8 @@ const LSP::DocumentSymbol *GDScriptWorkspace::resolve_symbol(const LSP::TextDocu
 		}
 
 		if (!symbol_identifier.is_empty()) {
-			if (ScriptServer::is_global_class(symbol_identifier)) {
-				String class_path = ScriptServer::get_global_class_path(symbol_identifier);
+			if (ScriptServer::is_namespace_class(symbol_identifier)) {
+				String class_path = ScriptServer::get_namespace_class_path(symbol_identifier);
 				symbol = get_script_symbol(class_path);
 
 			} else {

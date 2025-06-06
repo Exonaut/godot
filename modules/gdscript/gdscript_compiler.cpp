@@ -432,7 +432,7 @@ GDScriptCodeGenerator::Address GDScriptCompiler::_parse_expression(CodeGen &code
 					}
 
 					// Try global classes.
-					if (ScriptServer::is_global_class(identifier)) {
+					if (ScriptServer::is_namespace_class(identifier)) {
 						const GDScriptParser::ClassNode *class_node = codegen.class_node;
 						while (class_node->outer) {
 							class_node = class_node->outer;
@@ -443,7 +443,7 @@ GDScriptCodeGenerator::Address GDScriptCompiler::_parse_expression(CodeGen &code
 						if (class_node->identifier && class_node->identifier->name == identifier) {
 							res = Ref<GDScript>(main_script);
 						} else {
-							String global_class_path = ScriptServer::get_global_class_path(identifier);
+							String global_class_path = ScriptServer::get_namespace_class_path(identifier);
 							if (ResourceLoader::get_resource_type(global_class_path) == "GDScript") {
 								Error err = OK;
 								// Should not need to pass p_owner since analyzer will already have done it.

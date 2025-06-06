@@ -2095,7 +2095,7 @@ TypedArray<Node> Node::find_children(const String &p_pattern, const String &p_ty
 			} else if (cptr[i]->get_script_instance()) {
 				Ref<Script> scr = cptr[i]->get_script_instance()->get_script();
 				while (scr.is_valid()) {
-					if ((ScriptServer::is_global_class(p_type) && ScriptServer::get_global_class_path(p_type) == scr->get_path()) || p_type == scr->get_path()) {
+					if ((ScriptServer::is_namespace_class(p_type) && ScriptServer::get_namespace_class_path(p_type) == scr->get_path()) || p_type == scr->get_path()) {
 						ret.append(cptr[i]);
 						break;
 					}

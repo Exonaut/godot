@@ -1501,8 +1501,8 @@ void SceneTreeDock::_tool_selected(int p_tool, bool p_confirm_override) {
 
 			if (TOOL_CREATE_FAVORITE == p_tool) {
 				String name = selected_favorite_root.get_slicec(' ', 0);
-				if (ScriptServer::is_global_class(name)) {
-					Ref<Script> scr = ResourceLoader::load(ScriptServer::get_global_class_path(name), "Script");
+				if (ScriptServer::is_namespace_class(name)) {
+					Ref<Script> scr = ResourceLoader::load(ScriptServer::get_namespace_class_path(name), "Script");
 					if (scr.is_valid()) {
 						new_node = Object::cast_to<Node>(ClassDB::instantiate(scr->get_instance_base_type()));
 						if (new_node) {
@@ -4132,7 +4132,7 @@ void SceneTreeDock::attach_script_to_selected(bool p_extend) {
 			ScriptLanguage *l = ScriptServer::get_language(i);
 			if (l->get_type() == existing->get_class()) {
 				String name = l->get_global_class_name(existing->get_path());
-				if (ScriptServer::is_global_class(name) && EDITOR_GET("interface/editors/derive_script_globals_by_name").operator bool()) {
+				if (ScriptServer::is_namespace_class(name) && EDITOR_GET("interface/editors/derive_script_globals_by_name").operator bool()) {
 					inherits = name;
 				} else if (l->can_inherit_from_file()) {
 					inherits = "\"" + existing->get_path() + "\"";
@@ -4401,8 +4401,8 @@ void SceneTreeDock::_update_create_root_dialog(bool p_initializing) {
 					button->set_text(l);
 					button->set_clip_text(true);
 					String name = l.get_slicec(' ', 0);
-					if (ScriptServer::is_global_class(name)) {
-						name = ScriptServer::get_global_class_native_base(name);
+					if (ScriptServer::is_namespace_class(name)) {
+						name = ScriptServer::get_namespace_class_native_base(name);
 					}
 					button->set_button_icon(EditorNode::get_singleton()->get_class_icon(name));
 					button->connect(SceneStringName(pressed), callable_mp(this, &SceneTreeDock::_favorite_root_selected).bind(l));

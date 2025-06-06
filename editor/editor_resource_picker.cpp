@@ -325,8 +325,8 @@ void EditorResourcePicker::_edit_menu_cbk(int p_which) {
 					base = "";
 				}
 				ResourceLoader::get_recognized_extensions_for_type(base, &extensions);
-				if (ScriptServer::is_global_class(base)) {
-					ResourceLoader::get_recognized_extensions_for_type(ScriptServer::get_global_class_native_base(base), &extensions);
+				if (ScriptServer::is_namespace_class(base)) {
+					ResourceLoader::get_recognized_extensions_for_type(ScriptServer::get_namespace_class_native_base(base), &extensions);
 				}
 			}
 
@@ -475,7 +475,7 @@ void EditorResourcePicker::_edit_menu_cbk(int p_which) {
 			String intype = inheritors_array[p_which - TYPE_BASE_ID];
 			Variant obj;
 
-			if (ScriptServer::is_global_class(intype)) {
+			if (ScriptServer::is_namespace_class(intype)) {
 				obj = EditorNode::get_editor_data().script_class_instance(intype);
 			} else {
 				obj = ClassDB::instantiate(intype);

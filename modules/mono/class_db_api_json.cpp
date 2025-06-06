@@ -46,7 +46,7 @@ void class_db_api_to_json(const String &p_output_file, ClassDB::APIType p_api) {
 	class_list.sort_custom<StringName::AlphCompare>();
 
 	for (const StringName &E : class_list) {
-		ClassDB::ClassInfo *t = ClassDB::classes.getptr(E);
+		ClassDB::ClassInfo *t = ClassDB::get_class(E);
 		ERR_FAIL_NULL(t);
 		if (t->api != p_api || !t->exposed) {
 			continue;

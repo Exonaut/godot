@@ -88,7 +88,7 @@ static Vector<String> _get_hierarchy(const String &p_class_name) {
 		}
 
 		// A class defined in script with class_name.
-		if (ScriptServer::is_global_class(class_name)) {
+		if (ScriptServer::is_namespace_class(class_name)) {
 			hierarchy.push_back(class_name);
 
 			Ref<Script> script = EditorNode::get_editor_data().script_class_load_script(class_name);
@@ -368,7 +368,7 @@ void ScriptCreateDialog::_create_new() {
 	const ScriptLanguage::ScriptTemplate sinfo = _get_current_template();
 
 	String parent_class = parent_name->get_text();
-	if (!parent_name->get_text().is_quoted() && !ClassDB::class_exists(parent_class) && !ScriptServer::is_global_class(parent_class)) {
+	if (!parent_name->get_text().is_quoted() && !ClassDB::class_exists(parent_class) && !ScriptServer::is_namespace_class(parent_class)) {
 		// If base is a custom type, replace with script path instead.
 		const EditorData::CustomType *type = EditorNode::get_editor_data().get_custom_type_by_name(parent_class);
 		ERR_FAIL_NULL(type);

@@ -1220,8 +1220,8 @@ void ScriptTextEditor::_lookup_symbol(const String &p_symbol, int p_row, int p_c
 	ScriptLanguage::LookupResult result;
 	String code_text = code_editor->get_text_editor()->get_text_with_cursor_char(p_row, p_column);
 	Error lc_error = script->get_language()->lookup_code(code_text, p_symbol, script->get_path(), base, result);
-	if (ScriptServer::is_global_class(p_symbol)) {
-		EditorNode::get_singleton()->load_resource(ScriptServer::get_global_class_path(p_symbol));
+	if (ScriptServer::is_namespace_class(p_symbol)) {
+		EditorNode::get_singleton()->load_resource(ScriptServer::get_namespace_class_path(p_symbol));
 	} else if (p_symbol.is_resource_file() || p_symbol.begins_with("uid://")) {
 		EditorNode::get_singleton()->load_scene_or_resource(p_symbol);
 	} else if (lc_error == OK) {
@@ -1335,7 +1335,7 @@ void ScriptTextEditor::_validate_symbol(const String &p_symbol) {
 	String lc_text = code_editor->get_text_editor()->get_text_for_symbol_lookup();
 	Error lc_error = script->get_language()->lookup_code(lc_text, p_symbol, script->get_path(), base, result);
 	bool is_singleton = ProjectSettings::get_singleton()->has_autoload(p_symbol) && ProjectSettings::get_singleton()->get_autoload(p_symbol).is_singleton;
-	if (lc_error == OK || is_singleton || ScriptServer::is_global_class(p_symbol) || p_symbol.is_resource_file() || p_symbol.begins_with("uid://")) {
+	if (lc_error == OK || is_singleton || ScriptServer::is_namespace_class(p_symbol) || p_symbol.is_resource_file() || p_symbol.begins_with("uid://")) {
 		text_edit->set_symbol_lookup_word_as_valid(true);
 	} else if (p_symbol.is_relative_path()) {
 		String path = _get_absolute_path(p_symbol);
@@ -1602,7 +1602,7 @@ void ScriptTextEditor::_update_connected_methods() {
 					}
 				}
 
-				ClassDB::ClassInfo *base_class_ptr = ClassDB::classes.getptr(base_class)->inherits_ptr;
+				ClassDB::ClassInfo *base_class_ptr = ClassDB::get_class(base_class)->inherits_ptr;
 				if (base_class_ptr == nullptr) {
 					break;
 				}
@@ -2419,7 +2419,7 @@ void ScriptTextEditor::_text_edit_gui_input(const Ref<InputEvent> &ev) {
 		bool open_docs = false;
 		bool goto_definition = false;
 
-		if (ScriptServer::is_global_class(word_at_pos) || word_at_pos.is_resource_file()) {
+		if (ScriptServer::is_namespace_class(word_at_pos) || word_at_pos.is_resource_file()) {
 			open_docs = true;
 		} else {
 			Node *base = get_tree()->get_edited_scene_root();

@@ -1298,7 +1298,7 @@ RBSet<GDScript *> GDScript::get_must_clear_dependencies() {
 	}
 
 	for (GDScript *E : dependencies) {
-		if (cant_clear.has(E) || ScriptServer::is_global_class(E->get_fully_qualified_name())) {
+		if (cant_clear.has(E) || ScriptServer::is_namespace_class(E->get_fully_qualified_name())) {
 			continue;
 		}
 		must_clear_dependencies.insert(E);

@@ -1308,8 +1308,8 @@ void ProjectSettings::refresh_global_class_list() {
 		if (!c.has("class") || !c.has("language") || !c.has("path") || !c.has("base") || !c.has("is_abstract") || !c.has("is_tool") || !c.has("namespace")) {
 			continue;
 		}
-		print_line(vformat("Adding global class '%s' with namespace '%s' from path '%s'.", c["class"], c["namespace"], c["path"]));
-		ScriptServer::add_global_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
+		print_line(vformat("ProjectSettings: Adding global class '%s' with namespace '%s' from path '%s'.", c["class"], c["namespace"], c["path"]));
+		ScriptServer::add_namespace_class(c["class"], c["base"], c["language"], c["path"], c["is_abstract"], c["is_tool"], c["namespace"]);
 	}
 }
 

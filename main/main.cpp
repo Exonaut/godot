@@ -4135,8 +4135,8 @@ int Main::start() {
 			return EXIT_FAILURE;
 		}
 	} else { // Not based on script path.
-		if (!editor && !ClassDB::class_exists(main_loop_type) && ScriptServer::is_global_class(main_loop_type)) {
-			String script_path = ScriptServer::get_global_class_path(main_loop_type);
+		if (!editor && !ClassDB::class_exists(main_loop_type) && ScriptServer::is_namespace_class(main_loop_type)) {
+			String script_path = ScriptServer::get_namespace_class_path(main_loop_type);
 			Ref<Script> script_res = ResourceLoader::load(script_path);
 			if (script_res.is_null()) {
 				OS::get_singleton()->alert("Error: Could not load MainLoop script type: " + main_loop_type);
